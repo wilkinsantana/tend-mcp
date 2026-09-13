@@ -40,9 +40,10 @@ python scripts/check-worker-image.py --output dist/worker-image
 
 This explicitly uses only the local Docker socket on a trusted disposable
 Docker-enabled runner. It builds the worker, saves it, normalizes the image,
-loads the exact normalized image ID, starts a private stdin worker container,
-probes it through fixed exec, verifies isolation and packages its OCI layout.
-It removes only its own label-bound container and unique tags; shared immutable
+loads the tag-free archive, verifies its exact config identity, starts a private
+stdin worker by verified immutable daemon ID, probes it through fixed exec,
+verifies isolation and packages its OCI layout.
+It removes only its own label-bound container and unique build tag; shared immutable
 image/cache content may remain. No production environment, keys or volumes are
 used. Local Docker permission failure is a pending integration gate, not a pass.
 
@@ -72,6 +73,28 @@ The Gitea worker-image job is required before source mirroring. It currently
 builds and verifies artifacts only: production signing, artifact publication and
 catalog activation remain separate gates. No image has been verified merely
 because the local Python tests pass.
+
+## Config identity versus daemon identity
+
+Classic Docker commonly identifies an image by config digest; the containerd
+image store uses a manifest digest. A config digest must not be blindly passed
+to `docker tag` or treated as a universally resolvable daemon image ID.
+
+The fixture treats the single digest in `docker load` output only as a lookup
+hint. It inspects that immutable ID, saves that image again, and hashes the raw
+exported config bytes against the expected normalized config digest before
+creating any worker. The config binds the rootfs diff IDs and all runtime config;
+normalizing the export again would not suffice because it could strip changes.
+Export metadata reads are bounded and no TAR members are extracted to disk.
+Ambiguous output, inspection mismatch, duplicate metadata or config mismatch
+refuse. The fixture does not create an alias tag for the imported image.
+
+`identity.json` retains `image_id` as the artifact's config digest and records
+`daemon_image_id` separately. This receipt is not a core installation grant.
+The service ZIP and worker-v1 contracts are unchanged. Core's existing adapter
+still assumes config-digest daemon lookup; containerd-backed core installation
+requires its own reviewed identity-resolution work and real acceptance. A
+passing publisher fixture does not close that compatibility gate.
 
 ## Core supervision status
 

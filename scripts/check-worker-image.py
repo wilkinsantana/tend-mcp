@@ -7,11 +7,14 @@ no production keys. Requires a trusted disposable Docker-enabled CI runner.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import re
 import secrets
 import shutil
 import subprocess
 import sys
+import tarfile
 import tempfile
 from pathlib import Path
 
@@ -19,7 +22,7 @@ DOCKER = ["docker", "--host", "unix:///var/run/docker.sock"]
 
 
 def command(args: list[str], *, timeout: int = 600, stage: str = "docker", allow_nonzero: bool = False) -> bytes:
-    if stage not in {"docker", "build", "save", "normalize", "package"}:
+    if stage not in {"docker", "build", "save", "normalize", "package", "load", "inspect-image", "verify-save"}:
         raise ValueError("invalid fixture stage")
     try:
         result = subprocess.run(args, capture_output=True, timeout=timeout, check=False)
@@ -32,12 +35,74 @@ def command(args: list[str], *, timeout: int = 600, stage: str = "docker", allow
     return result.stdout
 
 
+def verify_saved_config(source: Path, expected: str) -> None:
+    """Verify exact raw config bytes, not a normalized projection of them.
+
+    This is a trusted local daemon export. Names are lookup keys only; no TAR
+    member is extracted onto the filesystem and layer bodies are not read.
+    """
+    try:
+        if not 0 < source.stat().st_size <= 512 * 1024 * 1024:
+            raise ValueError("export size")
+        with tarfile.open(source, "r:") as saved:
+            members: dict[str, tarfile.TarInfo] = {}
+            for member in saved:
+                if len(members) >= 128 or member.name in members or not (member.isfile() or member.isdir()):
+                    raise ValueError("export structure")
+                members[member.name] = member
+
+            def read(name: str) -> bytes:
+                member = members[name]
+                if not member.isfile() or not 0 < member.size <= 1024 * 1024:
+                    raise ValueError("export metadata size")
+                stream = saved.extractfile(member)
+                if stream is None:
+                    raise ValueError("export metadata missing")
+                with stream:
+                    return stream.read(1024 * 1024 + 1)
+
+            manifest = json.loads(read("manifest.json"))
+            if not isinstance(manifest, list) or len(manifest) != 1:
+                raise ValueError("single export required")
+            raw_config = read(manifest[0]["Config"])
+            if "sha256:" + hashlib.sha256(raw_config).hexdigest() != expected:
+                raise ValueError("config digest mismatch")
+    except Exception:
+        raise RuntimeError("loaded image raw config verification failed") from None
+
+
+def resolve_loaded_image(output: bytes, expected_config: str, work: Path) -> str:
+    # Import output is only a lookup hint. Containerd stores identify images
+    # by manifest digest; classic stores generally use the config digest.
+    if not re.fullmatch(r"sha256:[0-9a-f]{64}", expected_config):
+        raise RuntimeError("invalid normalized image identity")
+    candidates = [
+        match[1].decode("ascii")
+        for line in output.splitlines()
+        if (match := re.fullmatch(rb"Loaded image ID: (sha256:[0-9a-f]{64})", line.strip()))
+    ]
+    if len(candidates) != 1:
+        raise RuntimeError("loaded image identity unconfirmed")
+    candidate = candidates[0]
+    try:
+        result = json.loads(command(DOCKER + ["image", "inspect", candidate], stage="inspect-image"))
+        if len(result) != 1 or result[0]["Id"] != candidate or result[0]["Config"]["User"] != "65532:65532":
+            raise ValueError("image mismatch")
+    except Exception:
+        raise RuntimeError("loaded image inspection unconfirmed") from None
+    exported = work / "loaded-verification.tar"
+    command(DOCKER + ["save", "-o", str(exported), candidate], stage="verify-save")
+    verify_saved_config(exported, expected_config)
+    exported.unlink()
+    return candidate
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build and test the isolated worker image locally")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     nonce = secrets.token_hex(16)
-    raw_tag, normalized_tag = f"tend-mcp-build:{nonce}", f"tend-mcp-normalized:{nonce}"
+    raw_tag = f"tend-mcp-build:{nonce}"
     scripts = Path(__file__).resolve().parent
     root = scripts.parent
     container_id: str | None = None
@@ -63,13 +128,10 @@ def main() -> None:
                 .decode()
                 .strip()
             )
-            if not image_id.startswith("sha256:") or len(image_id) != 71:
+            if not re.fullmatch(r"sha256:[0-9a-f]{64}", image_id):
                 raise RuntimeError("invalid normalized image identity")
-            command(DOCKER + ["load", "-i", str(work / "normalized.tar")])
-            command(DOCKER + ["tag", image_id, normalized_tag])
-            config = json.loads(command(DOCKER + ["image", "inspect", normalized_tag]))[0]
-            if config["Id"] != image_id or config["Config"]["User"] != "65532:65532":
-                raise RuntimeError("normalized image mismatch")
+            loaded = command(DOCKER + ["load", "-i", str(work / "normalized.tar")], stage="load")
+            daemon_image_id = resolve_loaded_image(loaded, image_id, work)
             created = (
                 command(
                     DOCKER
@@ -93,7 +155,7 @@ def main() -> None:
                         "none",
                         "--label",
                         "tend.mcp.fixture=" + nonce,
-                        normalized_tag,
+                        daemon_image_id,
                     ]
                 )
                 .decode()
@@ -138,7 +200,9 @@ def main() -> None:
             )
             args.output.mkdir(parents=True, exist_ok=False)
             shutil.copyfile(work / "service.zip", args.output / "service.zip")
-            (args.output / "identity.json").write_text(json.dumps({"image_id": image_id, "package": json.loads(receipt)}))
+            (args.output / "identity.json").write_text(
+                json.dumps({"image_id": image_id, "daemon_image_id": daemon_image_id, "package": json.loads(receipt)})
+            )
             print("Worker image built, normalized, isolated probe passed, service package produced.")
     finally:
         # Reconcile by this run's opaque label even if create's reply was lost.
@@ -158,8 +222,7 @@ def main() -> None:
             raise RuntimeError("fixture cleanup unconfirmed")
         # Remove only this fixture's unique tags, never prune shared images,
         # caches, volumes, or containers. Shared immutable content may remain.
-        for tag in (normalized_tag, raw_tag):
-            command(DOCKER + ["image", "rm", tag], timeout=30, allow_nonzero=True)
+        command(DOCKER + ["image", "rm", raw_tag], timeout=30, allow_nonzero=True)
 
 
 if __name__ == "__main__":

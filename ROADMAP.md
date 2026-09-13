@@ -152,6 +152,14 @@ refuse. Focused normalization/diagnostic/packager checks: 52 passed; Ruff,
 format and mypy passed. The service ZIP and worker-v1 contracts are unchanged;
 real worker-image validation remains required before publication.
 
+The publisher fixture distinguishes canonical config digest from immutable
+Docker daemon image ID. Import output is only a lookup hint; a bounded raw
+config round trip must match the expected digest before worker creation.
+Classic/config-ID and containerd/manifest-ID paths, mismatch and no-start
+regressions are covered by 61 focused tests (including normalization/packaging);
+Ruff and mypy pass. Core's adapter is unchanged and its containerd identity
+resolution/acceptance remains a separate gate, not established by this fixture.
+
 ## Current blockers
 
 The prototype has not passed the component contract gates. Native isolation and
