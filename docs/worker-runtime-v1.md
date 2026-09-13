@@ -91,10 +91,12 @@ refuse. The fixture does not create an alias tag for the imported image.
 
 `identity.json` retains `image_id` as the artifact's config digest and records
 `daemon_image_id` separately. This receipt is not a core installation grant.
-The service ZIP and worker-v1 contracts are unchanged. Core's existing adapter
-still assumes config-digest daemon lookup; containerd-backed core installation
-requires its own reviewed identity-resolution work and real acceptance. A
-passing publisher fixture does not close that compatibility gate.
+The service ZIP and worker-v1 contracts are unchanged. Core now preserves the
+original OCI view alongside the legacy Docker import manifest, allowing lookup
+by either artifact-verified config or manifest digest without trusting load
+output. Its Gitea gate includes an inert real import/stopped-create/retire test.
+Full publisher-worker lifecycle and remote acceptance remain separate; passing
+this publisher fixture does not close those core acceptance gates.
 
 ## Core supervision status
 

@@ -157,8 +157,15 @@ Docker daemon image ID. Import output is only a lookup hint; a bounded raw
 config round trip must match the expected digest before worker creation.
 Classic/config-ID and containerd/manifest-ID paths, mismatch and no-start
 regressions are covered by 61 focused tests (including normalization/packaging);
-Ruff and mypy pass. Core's adapter is unchanged and its containerd identity
-resolution/acceptance remains a separate gate, not established by this fixture.
+Ruff and mypy pass. This fixture alone does not establish core compatibility.
+Core `570c3a35` now preserves original OCI metadata beside the legacy Docker
+import view and resolves only its verified config/manifest digests, including
+restart cleanup. There is no binding-schema or service ZIP/worker-v1 change.
+Core adds a mandatory Gitea inert import/stopped-create/retire test; its local
+selection passed 183 tests with two Docker skips and two deprecation warnings,
+and independent review approved the slice. Exact-SHA Gitea verification and
+main promotion are separate gates; full publisher-worker lifecycle, SSH,
+public activation and panel deployment are not established by this change.
 
 ## Current blockers
 
