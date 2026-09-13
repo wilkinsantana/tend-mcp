@@ -56,6 +56,71 @@ Panel-owned contracts (locate the tend.host checkout from the active workspace):
   MCP tests: 116 passed; independent review approved this inactive slice.
   The stage is not a durable cache, safe archive parser, installed package,
   or runtime authority. Runtime-release-v1 wire fields remain unchanged.
+  Core `aa52c7f8` adds strict bounded service ZIP validation (43 package/staging
+  tests); `0d0dc1c1` adds OCI blob/graph/platform and exact runtime-config
+  validation (70 OCI/package/staging tests). Both slices passed independent
+  review without enabling image import or execution.
+  The offline `scripts/pack-runtime-service.py` now produces deterministic
+  service-oci-zip-v1 bytes from a normalized OCI layout, with descriptor-bound
+  reads, mutation/digest checks and atomic no-overwrite publication. Publisher
+  packager/signing tests: 44 passed, plus Ruff/mypy. Core `b81c9a09` adds the
+  opt-in real CLI round trip; that test plus OCI/package tests: 50 passed.
+  Final combined core MCP checks: 166 passed. All three slices passed
+  independent review; no source imports or production keys. A stdlib-only
+  worker-v1 process and digest-pinned image build/normalization/probe path are
+  now implemented. Gitea requires the real worker-image job before source
+  mirroring; local Python tests do not close that gate. Core now has an internal
+  managed-UI/signed-artifact/daemon-image adoption and fenced Docker supervision
+  seam. Core `17e8de04` now connects verified tag-free image import before
+  disabled adoption, with bounded response handling and daemon identity
+  readback. It remains unregistered and not publicly activated.
+  Core checkpoint: `ce7da388`; 189 focused MCP tests passed. Companion
+  worker/image-tool/publisher tests: 67 passed, with Ruff/mypy clean. Independent
+  review approved the internal implementation after a Unicode-surrogate fix;
+  local Docker access was denied, so no local image execution is claimed.
+  Final combined core MCP tests: 202 passed; the image-import follow-up also
+  passed independent internal review. The Docker build/execution gate remains
+  pending, not inferred from those tests. See `docs/worker-runtime-v1.md`.
+  Production signing/publication, UI artifact/consent/lifecycle integration, grants/ingress and full
+  install/update/rollback/uninstall evidence remain pending.
+  Core `23e69bad` adds positive lost-create reconciliation: reserved-name
+  lookup must pass exact immutable-ID/ownership/config verification, identity
+  commits before retirement, and late create acknowledgements cannot rewrite
+  it. Absence and foreign occupants remain fenced; no new start or grant is
+  issued. Supervisor/adapter/ledger tests: 61 passed; independent internal
+  review approved. Worker-v1 and signed release wire formats are unchanged.
+  Core `2deb8213` adds the opt-in real Docker supervisor fixture; preparing it
+  does not close the blocked execution gate. Core `733d7b72` connects existing
+  catalog disable/remove to durable admission fencing and confirmed retirement
+  before UI mutation, with browser-admin and named-removal checks. Raw UI
+  replacement and adoption are transactionally excluded, including a replacement
+  that finishes before adoption acquires its lock. Generic MCP activation,
+  enable after shutdown, update and rollback remain blocked pending the complete
+  verified installer. Both slices passed independent review. Latest focused
+  core checks: 144 passed, one real-Docker skip, two deprecation warnings;
+  frontend: 3 tests passed, check 0 errors/128 warnings and build passed.
+  Worker-v1, signed metadata and service ZIP contracts remain unchanged;
+  real Docker/SSH acceptance, signing/distribution and ingress are still gates.
+  Core `d8355070` adds inactive installer review/confirmation bound to the actor,
+  action, destination, exact release, lifecycle, runtime binding and shutdown
+  fence. Reviews are short-lived and quota-bounded; confirmation rechecks trust,
+  expiry and metadata floor. A repeated stop invalidates earlier review even
+  at an unchanged disabled epoch. This records intent only: no public consent
+  route, settled-mutation proof, fence clearing or execution authority. Rollback
+  selection remains explicitly refused. Focused checks: 151 passed with two
+  deprecation warnings; independent review approved the inactive slice.
+  The consent UI and durable installer executor precede distribution work;
+  worker-v1 and signed release/service ZIP wire contracts are unchanged.
+  Consolidated core `613cea5c` includes internal consent-bound enable: settled catalog mutations,
+  atomic UI/fence/startup reservation, dispatch-before-create evidence and
+  immutable historical replay. Proven unissued work can cancel; uncertain
+  dispatched work retains positive-retirement requirements. The opt-in Docker
+  fixture now includes this executor, but remains unexecuted locally. Focused
+  checks: 169 passed, one Docker skip, two deprecation warnings; independent
+  review approved the internal slice. Public consent/enable controls,
+  install/update/rollback, operation retention and real Docker/SSH acceptance
+  remain gates. This checkpoint is cumulative; superseded queued CI runs may
+  be cancelled in favor of the latest exact-SHA checks, never bypassed.
 - [ ] C5: Bounded redacted read tools tested against real panel contracts.
 - [ ] C6: Separately reviewed writes/jobs and backend-enforced human approvals.
 - [ ] C7: Independent review, disposable lifecycle evidence per supported mode,
@@ -75,9 +140,12 @@ and pending dependency in each cross-repo handoff.
 The prototype has not passed the component contract gates. Native isolation and
 remote client authorization are unresolved. Tool payloads, redaction, transport
 security, durable operation behavior and destructive approvals need review.
-Gitea auto-publication is configured and the GitHub mirror reached verified
-commit `aed7bfd3339c0f0b83efe4f19e63ec3c40c3c7df`. Never bypass the exact-SHA
-validation gate or treat source publication as a component release.
+Gitea auto-publication is configured; the observed GitHub mirror is
+`bd2807c7a8061383176ba10105af212fdd96ff14`. Consolidated candidates retain that
+published ancestry and still require their own exact-SHA Gitea checks. Earlier
+slice references remain in the archived development history. Development CI
+uses PRs and main CI uses pushes to avoid duplicate feature-push/PR checks.
+Never bypass the validation gate or treat source publication as a component release.
 
 ## Prototype safety remediation
 

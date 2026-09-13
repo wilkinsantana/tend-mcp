@@ -25,8 +25,10 @@ uv run --group release python scripts/sign-runtime-release.py \
   < build/runtime-metadata.json > build/runtime-release.json
 ```
 
-Paths above are illustrative build outputs, not artifacts currently produced by
-this repository. A failed command must block upload; do not treat an empty or
+Paths above are illustrative build outputs, not production artifacts currently
+produced by this repository. The offline service container packager is described
+in [service-package-v1.md](service-package-v1.md); it requires a pre-existing
+normalized OCI layout and does not build the service image. A failed command must block upload; do not treat an empty or
 partially written output as a release. Existing Gitea CI tests the publisher but
 never signs/releases components or obtains a production signing key.
 

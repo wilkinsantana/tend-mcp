@@ -1,0 +1,6 @@
+**
+!Dockerfile.worker
+!src/
+!src/tend_mcp/
+!src/tend_mcp/__init__.py
+!src/tend_mcp/component_worker.py

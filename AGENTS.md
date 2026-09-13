@@ -10,8 +10,13 @@ an unauthenticated MCP HTTP service, or execute arbitrary extension backend code
 
 - Start with `git status --short`; preserve unrelated changes.
 - Discover narrowly with `rg`; load only relevant files and skills.
-- Make one independently testable change at a time. Run focused local checks;
+- Make and review independently testable changes locally, then batch related
+  work into one or two coherent commits before pushing. Do not push each small
+  edit, review fix, or roadmap handoff separately. Run focused local checks;
   Gitea owns the complete validation suite. Avoid duplicate full-suite runs.
+- Development branches validate through PRs; main validates pushes. Open/update
+  a PR instead of adding duplicate feature-push triggers or manual dispatches.
+  Cancel superseded queued runs through Gitea when batching work.
 - Keep outputs bounded and redact private data. Credentials stay in approved
   secret stores, never chat, argv, source, examples, logs, or Git remotes.
 - Default to one agent; independent security review remains a release gate.
@@ -23,8 +28,9 @@ an unauthenticated MCP HTTP service, or execute arbitrary extension backend code
 
 - Local checks: `uv run pytest -q`, `uv run ruff check src tests`,
   `uv run ruff format --check src tests`, `uv run mypy src`.
-  Publisher changes additionally include `scripts/sign-runtime-release.py` in
-  Ruff and mypy targets; see `docs/runtime-release-publishing-v1.md`. Gitea
+  Publisher changes additionally include `scripts/sign-runtime-release.py` and
+  `scripts/pack-runtime-service.py` in Ruff and mypy targets; see
+  `docs/runtime-release-publishing-v1.md` and `docs/service-package-v1.md`. Gitea
   includes these checks but performs no production component signing.
 - Gitea `.gitea/workflows/ci.yml` is the CI authority. Verify branch triggers and
   runner availability rather than assuming a push started validation.
