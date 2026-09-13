@@ -27,6 +27,17 @@ Panel-owned contracts (locate the tend.host checkout from the active workspace):
   rollback, restart fencing, and reinstall tombstones. Focused tests: 19 passed;
   independent review approved this inactive slice only. No supervisor, artifact
   trust, ingress, or client authorization is activated by the ledger.
+  Core `6a575b9e` adds inactive signed runtime metadata verification and durable
+  per-platform sequence floors. Runtime envelope schema 1 uses Ed25519 domain
+  `tend-mcp-runtime-release-v1`, externally pinned keys, stable version/core
+  ranges, `docker-isolated-stdio-v1`, exact UI/service SHA-256 bindings, and a
+  read-only capability vocabulary. The full wire contract is in the panel's
+  `docs/strategy/tend-mcp-runtime-contract-v1.md`. Same-version mutation,
+  downgrade, expiry, revoked trust, malformed input and failed persistence are
+  rejected. Focused runtime/lifecycle/Notes-discovery suite: 90 passed;
+  independent read-only review approved the metadata slice only. Publisher
+  signing/provisioning, artifact transport/byte verification and runtime
+  activation remain dependencies; no shared source import is authorized.
 - [ ] C3: Authenticated ingress, per-client resource grants and revocation.
 - [ ] C4: Component UI/service artifacts and existing catalog/update integration.
 - [ ] C5: Bounded redacted read tools tested against real panel contracts.
