@@ -1075,10 +1075,14 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "cryptography" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "ruff" },
+]
+release = [
+    { name = "cryptography" },
 ]
 
 [package.metadata]
@@ -1089,11 +1093,13 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "cryptography", specifier = ">=43.0.3" },
     { name = "mypy", specifier = ">=1.11" },
     { name = "pytest", specifier = ">=8" },
     { name = "pytest-asyncio", specifier = ">=0.24" },
     { name = "ruff", specifier = ">=0.6" },
 ]
+release = [{ name = "cryptography", specifier = ">=43.0.3" }]
 
 [[package]]
 name = "truststore"

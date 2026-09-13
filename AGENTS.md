@@ -23,6 +23,9 @@ an unauthenticated MCP HTTP service, or execute arbitrary extension backend code
 
 - Local checks: `uv run pytest -q`, `uv run ruff check src tests`,
   `uv run ruff format --check src tests`, `uv run mypy src`.
+  Publisher changes additionally include `scripts/sign-runtime-release.py` in
+  Ruff and mypy targets; see `docs/runtime-release-publishing-v1.md`. Gitea
+  includes these checks but performs no production component signing.
 - Gitea `.gitea/workflows/ci.yml` is the CI authority. Verify branch triggers and
   runner availability rather than assuming a push started validation.
 - GitHub receives only the exact passing SHA through the workflow's publication
