@@ -14,13 +14,13 @@ normalizer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(normalizer)
 
 
-def saved_image(path, *, unsafe=False):
+def saved_image(path, *, unsafe=False, wrong_digest=False):
     layer = b"inert layer bytes; fixture is not an executable image"
     digest = "sha256:" + hashlib.sha256(layer).hexdigest()
     config = {
         "os": "linux",
         "architecture": "amd64",
-        "rootfs": {"type": "layers", "diff_ids": [digest]},
+        "rootfs": {"type": "layers", "diff_ids": ["sha256:" + "a" * 64 if wrong_digest else digest]},
         "config": {
             "User": "0" if unsafe else "65532:65532",
             "WorkingDir": "/app",
@@ -66,3 +66,62 @@ def test_wrong_worker_build_cannot_be_normalized(tmp_path):
     with pytest.raises(ValueError, match="wrong_build_entrypoint"):
         normalizer.normalize(source, tmp_path / "oci", tmp_path / "load.tar")
     assert not (tmp_path / "oci").exists()
+
+
+@pytest.mark.parametrize("reason,code", normalizer.ERROR_EXIT_CODES.items())
+def test_cli_classifies_only_fixed_rejection_codes(monkeypatch, capsys, reason, code):
+    import sys
+
+    monkeypatch.setattr(sys, "argv", ["normalize", "--source", "unused", "--layout", "unused", "--load-archive", "unused"])
+
+    def fail(*args):
+        raise ValueError(reason)
+
+    monkeypatch.setattr(normalizer, "normalize", fail)
+    with pytest.raises(SystemExit) as caught:
+        normalizer.main()
+    assert caught.value.code == code
+    assert capsys.readouterr().err == "Worker image normalization failed; discard this disposable build workspace.\n"
+
+
+@pytest.mark.parametrize(
+    "error",
+    [ValueError("private metadata"), OSError("private path"), KeyError("private field"), AttributeError("private detail")],
+)
+def test_cli_does_not_echo_unknown_failures(monkeypatch, capsys, error):
+    import sys
+
+    monkeypatch.setattr(sys, "argv", ["normalize", "--source", "unused", "--layout", "unused", "--load-archive", "unused"])
+
+    def fail(*args):
+        raise error
+
+    monkeypatch.setattr(normalizer, "normalize", fail)
+    with pytest.raises(SystemExit) as caught:
+        normalizer.main()
+    assert caught.value.code == 2
+    assert "private" not in capsys.readouterr().err
+
+
+def test_real_cli_digest_rejection_is_distinguishable(tmp_path):
+    import subprocess
+    import sys
+
+    source = tmp_path / "saved.tar"
+    saved_image(source, wrong_digest=True)
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT),
+            "--source",
+            str(source),
+            "--layout",
+            str(tmp_path / "oci"),
+            "--load-archive",
+            str(tmp_path / "load.tar"),
+        ],
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == normalizer.ERROR_EXIT_CODES["build_layer_digest_mismatch"]
+    assert not result.stdout and str(tmp_path).encode() not in result.stderr

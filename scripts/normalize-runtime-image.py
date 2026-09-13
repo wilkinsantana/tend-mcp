@@ -17,6 +17,22 @@ from typing import Any
 
 MAX_BYTES = 512 * 1024 * 1024
 ENTRYPOINT = ["/usr/local/bin/python", "-I", "-u", "-m", "tend_mcp.component_worker"]
+# Stable exit codes let the fixture identify rejection without relaying raw
+# subprocess output, archive names, metadata or filesystem exception messages.
+ERROR_EXIT_CODES = {
+    "invalid_build_paths": 20,
+    "invalid_build_archive": 21,
+    "oversized_build_member": 22,
+    "invalid_build_metadata": 23,
+    "single_image_required": 24,
+    "invalid_build_layers": 25,
+    "unsupported_build_platform": 26,
+    "wrong_build_entrypoint": 27,
+    "unsafe_build_config": 28,
+    "invalid_build_layer": 29,
+    "truncated_build_layer": 30,
+    "build_layer_digest_mismatch": 31,
+}
 
 
 def canonical(value: object) -> bytes:
@@ -163,8 +179,13 @@ def main() -> None:
     args = parser.parse_args()
     try:
         image_id = normalize(args.source, args.layout, args.load_archive)
-    except (ValueError, OSError, KeyError, TypeError, tarfile.TarError):
-        parser.exit(2, "Worker image normalization failed; discard this disposable build workspace.\n")
+    except Exception as error:
+        # The CLI never forwards unexpected exception messages or tracebacks.
+        # Interrupts/SystemExit still propagate; only known exact ValueErrors
+        # receive a specific rejection code.
+        reason = error.args[0] if type(error) is ValueError and error.args else None
+        code = ERROR_EXIT_CODES.get(reason, 2) if isinstance(reason, str) else 2
+        parser.exit(code, "Worker image normalization failed; discard this disposable build workspace.\n")
     print(image_id)
 
 

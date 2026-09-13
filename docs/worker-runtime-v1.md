@@ -54,6 +54,13 @@ It requires new output paths; failure may leave partial output in the disposable
 build workspace, which must be discarded. A normalizer failure cannot proceed
 to signing or upload. This tool is not an adversarial archive sandbox.
 
+Fixture errors identify a fixed stage and subprocess exit code without echoing
+raw output, arguments, paths or metadata. The normalizer maps known rejection
+reasons to stable exit codes in `ERROR_EXIT_CODES` (20–31); unknown errors use 2.
+For example, 21 rejects the archive structure, 28 rejects unsafe runtime config,
+and 31 rejects the layer/diff-ID match. These diagnostics do not relax checks or
+prove an underlying Docker-format cause without the corresponding runner result.
+
 The Gitea worker-image job is required before source mirroring. It currently
 builds and verifies artifacts only: production signing, artifact publication and
 catalog activation remain separate gates. No image has been verified merely

@@ -135,6 +135,15 @@ mutable databases, broad owner tokens, or arbitrary backend extension execution.
 Exchange contract version, identifiers/capabilities, compatibility, test evidence,
 and pending dependency in each cross-repo handoff.
 
+## Image validation diagnostics
+
+The disposable worker-image check reports fixed stage/exit classifications
+without raw subprocess output. Known normalizer rejection codes are documented
+in `docs/worker-runtime-v1.md`; checks and required Docker validation remain
+unchanged. Diagnostic unit/CLI coverage: 26 passed, with focused Ruff and mypy
+checks passing. Classification is not evidence that image normalization or the
+real lifecycle has passed.
+
 ## Current blockers
 
 The prototype has not passed the component contract gates. Native isolation and

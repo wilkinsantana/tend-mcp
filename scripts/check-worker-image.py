@@ -18,10 +18,17 @@ from pathlib import Path
 DOCKER = ["docker", "--host", "unix:///var/run/docker.sock"]
 
 
-def command(args: list[str], *, timeout: int = 600) -> bytes:
-    result = subprocess.run(args, capture_output=True, timeout=timeout, check=False)
-    if result.returncode:
-        raise RuntimeError("worker image command failed (output suppressed)")
+def command(args: list[str], *, timeout: int = 600, stage: str = "docker", allow_nonzero: bool = False) -> bytes:
+    if stage not in {"docker", "build", "save", "normalize", "package"}:
+        raise ValueError("invalid fixture stage")
+    try:
+        result = subprocess.run(args, capture_output=True, timeout=timeout, check=False)
+    except subprocess.TimeoutExpired:
+        raise RuntimeError(f"worker image {stage} command timed out (output suppressed)") from None
+    except OSError:
+        raise RuntimeError(f"worker image {stage} command unavailable (details suppressed)") from None
+    if result.returncode and not allow_nonzero:
+        raise RuntimeError(f"worker image {stage} command failed (exit={result.returncode}; output suppressed)")
     return result.stdout
 
 
@@ -37,8 +44,8 @@ def main() -> None:
     try:
         with tempfile.TemporaryDirectory(prefix="mcp-image-check-") as temporary:
             work = Path(temporary)
-            command(DOCKER + ["build", "-f", str(root / "Dockerfile.worker"), "-t", raw_tag, str(root)])
-            command(DOCKER + ["save", "-o", str(work / "built.tar"), raw_tag])
+            command(DOCKER + ["build", "-f", str(root / "Dockerfile.worker"), "-t", raw_tag, str(root)], stage="build")
+            command(DOCKER + ["save", "-o", str(work / "built.tar"), raw_tag], stage="save")
             image_id = (
                 command(
                     [
@@ -50,7 +57,8 @@ def main() -> None:
                         str(work / "layout"),
                         "--load-archive",
                         str(work / "normalized.tar"),
-                    ]
+                    ],
+                    stage="normalize",
                 )
                 .decode()
                 .strip()
@@ -125,7 +133,8 @@ def main() -> None:
                     str(work / "layout"),
                     "--output",
                     str(work / "service.zip"),
-                ]
+                ],
+                stage="package",
             )
             args.output.mkdir(parents=True, exist_ok=False)
             shutil.copyfile(work / "service.zip", args.output / "service.zip")
@@ -150,7 +159,7 @@ def main() -> None:
         # Remove only this fixture's unique tags, never prune shared images,
         # caches, volumes, or containers. Shared immutable content may remain.
         for tag in (normalized_tag, raw_tag):
-            subprocess.run(DOCKER + ["image", "rm", tag], capture_output=True, timeout=30, check=False)
+            command(DOCKER + ["image", "rm", tag], timeout=30, allow_nonzero=True)
 
 
 if __name__ == "__main__":
