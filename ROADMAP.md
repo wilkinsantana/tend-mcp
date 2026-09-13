@@ -22,6 +22,11 @@ Panel-owned contracts (locate the tend.host checkout from the active workspace):
 - [x] C0: Record independent component direction in both repositories.
 - [ ] C1: Review/freeze the runtime contract. Draft exists in panel repository.
 - [ ] C2: Panel admission, supervision, epoch fencing, and lifecycle recovery.
+  Core commit `8ca3714e` adds the inactive `mcp_component_lifecycle.py` ledger:
+  atomic full-snapshot comparisons, startup/stop epochs, stopped-only update and
+  rollback, restart fencing, and reinstall tombstones. Focused tests: 19 passed;
+  independent review approved this inactive slice only. No supervisor, artifact
+  trust, ingress, or client authorization is activated by the ledger.
 - [ ] C3: Authenticated ingress, per-client resource grants and revocation.
 - [ ] C4: Component UI/service artifacts and existing catalog/update integration.
 - [ ] C5: Bounded redacted read tools tested against real panel contracts.
