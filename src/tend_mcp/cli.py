@@ -2,7 +2,7 @@
 
 tend-mcp            run the MCP server on stdio (what agents launch)
 tend-mcp doctor     check URL, token, scopes and panel reachability
-tend-mcp http       run streamable-HTTP on --host/--port (shared/remote use)
+tend-mcp http       reserved; blocked until authenticated component ingress exists
 """
 
 from __future__ import annotations
@@ -59,10 +59,16 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--version", action="version", version=__version__)
     sub = parser.add_subparsers(dest="cmd")
     sub.add_parser("doctor", help="verify connectivity, token and scopes")
-    http = sub.add_parser("http", help="serve streamable-HTTP instead of stdio")
+    http = sub.add_parser("http", help="reserved for authenticated component ingress (currently disabled)")
     http.add_argument("--host", default="127.0.0.1")
     http.add_argument("--port", type=int, default=8765)
     args = parser.parse_args(argv)
+
+    if args.cmd == "http":
+        parser.error(
+            "HTTP serving is disabled until core-authenticated component ingress is implemented. "
+            "A shared panel token does not authenticate MCP clients. Use local stdio for prototype testing."
+        )
 
     config = _load_config()
     if args.cmd == "doctor":
@@ -71,10 +77,7 @@ def main(argv: list[str] | None = None) -> None:
     from .server import build_server  # lazy: keeps `doctor` fast
 
     server = build_server(config)
-    if args.cmd == "http":
-        server.run(transport="streamable-http", host=args.host, port=args.port)
-    else:
-        server.run(transport="stdio")
+    server.run(transport="stdio")
 
 
 if __name__ == "__main__":
