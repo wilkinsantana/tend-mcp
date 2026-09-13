@@ -7,11 +7,14 @@ The build workspace is trusted. Neither output is signed or installed here.
 from __future__ import annotations
 
 import argparse
+import gzip
 import hashlib
 import io
 import json
 import os
 import tarfile
+import zlib
+from contextlib import nullcontext
 from pathlib import Path
 from typing import Any
 
@@ -32,6 +35,8 @@ ERROR_EXIT_CODES = {
     "invalid_build_layer": 29,
     "truncated_build_layer": 30,
     "build_layer_digest_mismatch": 31,
+    "invalid_compressed_build_layer": 32,
+    "oversized_normalized_layers": 33,
 }
 
 
@@ -92,6 +97,7 @@ def normalize(source: Path, layout: Path, load_archive: Path) -> str:
             return {"mediaType": media_type, "digest": "sha256:" + digest, "size": len(value)}
 
         descriptors: list[dict[str, Any]] = []
+        total_layer_bytes = 0
         for number, name in enumerate(layers):
             member = members[name]
             if not member.isfile() or not 0 < member.size <= MAX_BYTES:
@@ -102,11 +108,25 @@ def normalize(source: Path, layout: Path, load_archive: Path) -> str:
             digest = hashlib.sha256()
             count = 0
             with stream, temporary.open("xb") as destination:
-                while chunk := stream.read(1024 * 1024):
-                    count += len(chunk)
-                    destination.write(chunk)
-                    digest.update(chunk)
-            if count != member.size:
+                compressed = stream.read(2) == b"\x1f\x8b"
+                stream.seek(0)
+                # Containerd-backed Docker saves may retain gzip OCI blobs.
+                # rootfs.diff_ids always identify *uncompressed* layer bytes.
+                # Never extract their TAR members or relax the diff-ID check.
+                try:
+                    with gzip.GzipFile(fileobj=stream, mode="rb") if compressed else nullcontext(stream) as content:
+                        while chunk := content.read(min(1024 * 1024, MAX_BYTES - total_layer_bytes + 1)):
+                            count += len(chunk)
+                            total_layer_bytes += len(chunk)
+                            if total_layer_bytes > MAX_BYTES:
+                                raise ValueError("oversized_normalized_layers")
+                            destination.write(chunk)
+                            digest.update(chunk)
+                except (EOFError, gzip.BadGzipFile, zlib.error):
+                    raise ValueError("invalid_compressed_build_layer") from None
+            if not count:
+                raise ValueError("invalid_build_layer")
+            if not compressed and count != member.size:
                 raise ValueError("truncated_build_layer")
             name_digest = digest.hexdigest()
             os.link(temporary, blobs / name_digest)

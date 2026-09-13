@@ -144,6 +144,14 @@ unchanged. Diagnostic unit/CLI coverage: 26 passed, with focused Ruff and mypy
 checks passing. Classification is not evidence that image normalization or the
 real lifecycle has passed.
 
+The normalizer now handles gzip OCI layer blobs as well as legacy uncompressed
+Docker-save layers, retaining exact uncompressed diff-ID checks and a 512 MiB
+aggregate decoded-byte cap. Equivalent inputs produce identical normalized
+image/load-archive bytes; corrupt, empty, oversized and wrong-digest inputs
+refuse. Focused normalization/diagnostic/packager checks: 52 passed; Ruff,
+format and mypy passed. The service ZIP and worker-v1 contracts are unchanged;
+real worker-image validation remains required before publication.
+
 ## Current blockers
 
 The prototype has not passed the component contract gates. Native isolation and

@@ -48,6 +48,12 @@ used. Local Docker permission failure is a pending integration gate, not a pass.
 
 The normalizer accepts trusted Docker-save build output, never a caller's remote
 URL or arbitrary runtime archive. It does not extract layer TARs onto the host.
+It accepts legacy uncompressed layers and gzip OCI layer blobs retained by
+containerd-backed Docker saves. Gzip is streamed into bounded uncompressed
+blobs; all decoded layers together are capped at 512 MiB. Empty, truncated,
+corrupt, oversized or mismatched decoded layers refuse normalization. Raw and
+gzip representations of the same layers produce the same normalized identity
+and tag-free load archive. No layer TAR members are extracted.
 It verifies layer/diff-ID identity, strips build history/inherited environment
 metadata and writes a minimal OCI config plus tag-free Docker-load archive.
 It requires new output paths; failure may leave partial output in the disposable
@@ -56,9 +62,10 @@ to signing or upload. This tool is not an adversarial archive sandbox.
 
 Fixture errors identify a fixed stage and subprocess exit code without echoing
 raw output, arguments, paths or metadata. The normalizer maps known rejection
-reasons to stable exit codes in `ERROR_EXIT_CODES` (20–31); unknown errors use 2.
+reasons to stable exit codes in `ERROR_EXIT_CODES` (20–33); unknown errors use 2.
 For example, 21 rejects the archive structure, 28 rejects unsafe runtime config,
-and 31 rejects the layer/diff-ID match. These diagnostics do not relax checks or
+and 31 rejects the layer/diff-ID match. Code 32 rejects corrupt/truncated gzip;
+33 rejects the total decoded-byte budget. These diagnostics do not relax checks or
 prove an underlying Docker-format cause without the corresponding runner result.
 
 The Gitea worker-image job is required before source mirroring. It currently
