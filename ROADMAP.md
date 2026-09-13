@@ -50,6 +50,12 @@ Panel-owned contracts (locate the tend.host checkout from the active workspace):
   support but never signs or uploads production artifacts. Key provisioning,
   safe artifact format/staging/transport, installable UI/service packages,
   managed-UI agreement and existing catalog activation remain pending.
+  Core `886206d1` adds private transient staging with verified transfer and
+  staged-byte readback, bounded readers, partial-write handling and cleanup
+  after in-flight thread I/O settles under repeated cancellation. Combined
+  MCP tests: 116 passed; independent review approved this inactive slice.
+  The stage is not a durable cache, safe archive parser, installed package,
+  or runtime authority. Runtime-release-v1 wire fields remain unchanged.
 - [ ] C5: Bounded redacted read tools tested against real panel contracts.
 - [ ] C6: Separately reviewed writes/jobs and backend-enforced human approvals.
 - [ ] C7: Independent review, disposable lifecycle evidence per supported mode,
