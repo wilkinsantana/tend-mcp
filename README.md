@@ -1,4 +1,10 @@
-# tend-mcp
+# TEND MCP
+
+> **Development prototype — component implementation pending.** TEND MCP will
+> install and update independently in Tend's existing component catalog, like
+> Notes and Sites. See [ROADMAP.md](ROADMAP.md) for the canonical direction and
+> release gates. The standalone usage below is historical prototype guidance,
+> not a supported component installation. Do not expose its HTTP service publicly.
 
 MCP server that lets coding agents (Claude Code, Codex, Cursor, pi, Zed, …)
 operate a [tend.host](https://github.com/wilkinsantana/tend.host) panel —
