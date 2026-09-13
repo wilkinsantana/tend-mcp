@@ -1,14 +1,52 @@
-name: ci
+name: tend-mcp Gitea CI
+
 on:
-  push:
   pull_request:
+    branches: [main]
+  push:
+    branches: [main, "feature/**", "fix/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
 jobs:
   test:
+    name: Lint, typecheck, test
     runs-on: tend-ci
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
-      - run: uv sync
+      - uses: https://gitea.com/actions/checkout@v7
+      - uses: https://gitea.com/actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install uv
+        run: python -m pip install --quiet uv
+      - run: uv sync --frozen
       - run: uv run ruff check src tests
+      - run: uv run ruff format --check src tests
       - run: uv run mypy src
       - run: uv run pytest -q
+      - name: Build distribution
+        run: uv build
+
+  publish_github:
+    name: Publish verified main to GitHub
+    runs-on: tend-ci
+    needs: [test]
+    if: gitea.event_name == 'push' && gitea.ref == 'refs/heads/main'
+    steps:
+      - uses: https://gitea.com/actions/checkout@v7
+        with:
+          ref: ${{ gitea.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: https://gitea.com/actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Publish the exact verified commit
+        env:
+          GH_PUBLISH_TOKEN: ${{ secrets.GH_PUBLISH_TOKEN }}
+          VERIFIED_SHA: ${{ gitea.sha }}
+          GITEA_EVENT_NAME: ${{ gitea.event_name }}
+          GITEA_REF: ${{ gitea.ref }}
+        run: python scripts/publish-verified-main.py
