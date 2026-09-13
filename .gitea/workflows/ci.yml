@@ -43,6 +43,10 @@ jobs:
       - uses: https://gitea.com/actions/setup-python@v6
         with:
           python-version: "3.12"
+      - name: Diagnose GitHub credential access without revealing secrets
+        env:
+          GH_PUBLISH_TOKEN: ${{ secrets.GH_PUBLISH_TOKEN }}
+        run: python scripts/check-publication-access.py
       - name: Publish the exact verified commit
         env:
           GH_PUBLISH_TOKEN: ${{ secrets.GH_PUBLISH_TOKEN }}
