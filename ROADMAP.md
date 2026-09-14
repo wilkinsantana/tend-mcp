@@ -121,6 +121,20 @@ Panel-owned contracts (locate the tend.host checkout from the active workspace):
   install/update/rollback, operation retention and real Docker/SSH acceptance
   remain gates. This checkpoint is cumulative; superseded queued CI runs may
   be cancelled in favor of the latest exact-SHA checks, never bypassed.
+  Core now adds internal consent-bound runtime installation over an already
+  verified managed UI, with durable claims/timestamps, single-use import,
+  disabled adoption and atomic restoration of only the same approved UI.
+  Existing catalog shutdown can cancel that exact import without late adoption;
+  raw package reservations remain fenced. Strict historical signature/record
+  validation uses a retained public key only for cleanup/replay, never as current
+  execution trust. The mandatory inert Docker fixture
+  now covers real installation and post-import cancellation; the separately
+  authorized publisher lifecycle fixture uses confirmed install/enable paths.
+  Review and exact-candidate Gitea verification remain required. Runtime release
+  schema 1, worker-v1, service-oci-zip-v1, capability identifiers and compatibility
+  ranges are unchanged. No new endpoints, UI package installer, permissions,
+  updates/rollback or ingress are activated. See core's
+  `docs/strategy/tend-mcp-install-executor-v1.md`.
 - [ ] C5: Bounded redacted read tools tested against real panel contracts.
 - [ ] C6: Separately reviewed writes/jobs and backend-enforced human approvals.
 - [ ] C7: Independent review, disposable lifecycle evidence per supported mode,
@@ -163,8 +177,9 @@ import view and resolves only its verified config/manifest digests, including
 restart cleanup. There is no binding-schema or service ZIP/worker-v1 change.
 Core adds a mandatory Gitea inert import/stopped-create/retire test; its local
 selection passed 183 tests with two Docker skips and two deprecation warnings,
-and independent review approved the slice. Exact-SHA Gitea verification and
-main promotion are separate gates; full publisher-worker lifecycle, SSH,
+and independent review approved the slice. Exact core `570c3a35` passed Gitea
+#175 (PR) and #176 (main), including the inert Docker check, and reached GitHub
+unchanged through automatic publication. Full publisher-worker lifecycle, SSH,
 public activation and panel deployment are not established by this change.
 
 ## Current blockers
@@ -172,9 +187,9 @@ public activation and panel deployment are not established by this change.
 The prototype has not passed the component contract gates. Native isolation and
 remote client authorization are unresolved. Tool payloads, redaction, transport
 security, durable operation behavior and destructive approvals need review.
-Gitea auto-publication is configured; the observed GitHub mirror is
-`bd2807c7a8061383176ba10105af212fdd96ff14`. Consolidated candidates retain that
-published ancestry and still require their own exact-SHA Gitea checks. Earlier
+Gitea worker-image validation and automatic source mirroring passed on #23 for
+`f708d99e59a9300c2a777fe44ea7be0afc394407`; this is not a signed component release.
+New candidates still require their own exact-SHA Gitea checks. Earlier
 slice references remain in the archived development history. Development CI
 uses PRs and main CI uses pushes to avoid duplicate feature-push/PR checks.
 Never bypass the validation gate or treat source publication as a component release.
