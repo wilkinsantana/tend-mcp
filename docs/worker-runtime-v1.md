@@ -125,8 +125,13 @@ is a separate checkout pinned to the reviewed full commit in the workflow, not
 an import or dependency of the MCP package. Verify the exact core commit has
 passed Gitea and reached its GitHub mirror before advancing that pin. This adds
 actual confirmed install/enable, probe/stop, lost-create recovery and independent
-cleanup to the gate; it does not cover update/rollback, SSH, public installer UX
-or client authorization yet.
+cleanup to the gate. Direct transport passed Gitea #25/#26 at `f98bfa3`.
+The next pinned fixture additionally exercises production SSH forwarding through
+an authenticated loopback AsyncSSH server, with ephemeral keys and pinned host
+identity. Both explicit transport cases must pass, with JUnit verification that
+neither was skipped. Cleanup does not depend on a surviving SSH tunnel. This
+is not remote VPS/OpenSSH, update/rollback, public installer UX or client
+acceptance; the SSH candidate's actual Gitea execution remains a separate gate.
 
 Private source access uses `CORE_COMPAT_READ_KEY`: a dedicated read-only GitHub
 deploy key for the core repository, whose private half exists only in this

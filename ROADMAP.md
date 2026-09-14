@@ -192,8 +192,17 @@ dedicated read-only source-access deploy key belongs to CI only; no publisher
 credential or runtime secret is shared. Core source never enters the MCP build
 or import graph. The reviewed core pin, access provisioning and actual passing
 Gitea run are required evidence, not inferred from workflow preparation.
+Direct publisher-package lifecycle acceptance passed Gitea #25/#26 at
+`f98bfa3a264bab17d01aef18731879861bbf0d06`, using verified core `e00251c0`.
+The next pin adds an authenticated loopback SSH variant through production
+`RemoteDocker`, with ephemeral keys, host-key pinning and one allowed Unix
+socket. Both direct and SSH cases must execute without JUnit skips; unavailable
+or skipped tests cannot pass acceptance. Publish this pin only after its exact
+core SHA passes Gitea and reaches GitHub. Core also adds reachable prohibited
+endpoints and mutation tests proving forwarding-policy regression detection.
 Worker-v1, service-oci-zip-v1 and release schema 1 are unchanged. Full public
-installer/update/rollback, SSH, distribution and ingress remain pending.
+installer/update/rollback, remote VPS/OpenSSH, distribution and ingress remain
+pending; loopback AsyncSSH is transport evidence, not remote-server acceptance.
 
 ## Current blockers
 

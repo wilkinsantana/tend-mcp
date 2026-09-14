@@ -53,7 +53,7 @@ jobs:
         with:
           github-server-url: https://github.com
           repository: wilkinsantana/tend.host
-          ref: e00251c01ec723d7d5189a56bae48e12fde24942
+          ref: 21a7924e5f39e08cbaf94826c710d9ef1714221f
           path: .core-contract
           ssh-key: ${{ secrets.CORE_COMPAT_READ_KEY }}
           persist-credentials: false
@@ -61,7 +61,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git -C .core-contract rev-parse HEAD)" = e00251c01ec723d7d5189a56bae48e12fde24942
+          test "$(git -C .core-contract rev-parse HEAD)" = 21a7924e5f39e08cbaf94826c710d9ef1714221f
           test -z "$(git -C .core-contract status --porcelain)"
       - name: Install isolated core fixture dependencies
         shell: bash
@@ -73,13 +73,24 @@ jobs:
         shell: bash
         env:
           TEND_MCP_TEST_LOCAL_DOCKER: "1"
+          TEND_MCP_TEST_LOCAL_SSH: "1"
           TEND_MCP_TEST_PLATFORM: linux/amd64
         run: |
           set -euo pipefail
           export TEND_MCP_TEST_SERVICE_PACKAGE="$PWD/dist/worker-image/service.zip"
           python="$PWD/.core-fixture-venv/bin/python"
           cd .core-contract/backend
-          "$python" -m pytest -q tests/test_mcp_docker_integration.py
+          "$python" -m pytest -q --junitxml="$RUNNER_TEMP/mcp-lifecycle.xml" \
+            'tests/test_mcp_docker_integration.py::test_real_import_supervision_lost_reply_and_cleanup[local]' \
+            'tests/test_mcp_docker_integration.py::test_real_import_supervision_lost_reply_and_cleanup[ssh]'
+          "$python" - "$RUNNER_TEMP/mcp-lifecycle.xml" <<'PYTHON'
+          import sys
+          import xml.etree.ElementTree as ET
+          cases = list(ET.parse(sys.argv[1]).getroot().iter('testcase'))
+          assert len(cases) == 2, 'both lifecycle transports must execute'
+          assert all(not any(case.find(tag) is not None for tag in ('skipped', 'failure', 'error')) for case in cases), 'lifecycle skips or failures are not acceptance'
+          print('Direct and pinned SSH publisher lifecycle cases passed without skips.')
+          PYTHON
 
   publish_github:
     name: Publish verified main to GitHub
