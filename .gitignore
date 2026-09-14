@@ -1,4 +1,6 @@
 .venv/
+.core-contract/
+.core-fixture-venv/
 __pycache__/
 *.egg-info/
 dist/

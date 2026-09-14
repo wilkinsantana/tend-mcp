@@ -118,3 +118,21 @@ with an inert managed UI and ephemeral test trust. It independently checks
 container absence before fallback cleanup, preserves foreign occupants and
 attempts cleanup for every owned birth. Explicit local-Docker authorization is
 required; a skipped or inaccessible fixture never counts as lifecycle acceptance.
+
+The mandatory publisher worker-image job now also runs that core fixture in a
+separate virtual environment against its newly produced service ZIP. Core source
+is a separate checkout pinned to the reviewed full commit in the workflow, not
+an import or dependency of the MCP package. Verify the exact core commit has
+passed Gitea and reached its GitHub mirror before advancing that pin. This adds
+actual confirmed install/enable, probe/stop, lost-create recovery and independent
+cleanup to the gate; it does not cover update/rollback, SSH, public installer UX
+or client authorization yet.
+
+Private source access uses `CORE_COMPAT_READ_KEY`: a dedicated read-only GitHub
+deploy key for the core repository, whose private half exists only in this
+consumer's approved CI secret store. It is not a reused publisher credential or
+a runtime component secret. The pinned checkout action supplies strict GitHub
+host verification and does not persist Git credentials. Missing read access
+fails the required job; there is no credential or acceptance bypass for forks.
+The checkout and virtual environment are ignored and cannot enter the worker's
+allowlist-only Docker context. No production signing key or live server is used.

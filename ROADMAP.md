@@ -182,6 +182,19 @@ and independent review approved the slice. Exact core `570c3a35` passed Gitea
 unchanged through automatic publication. Full publisher-worker lifecycle, SSH,
 public activation and panel deployment are not established by this change.
 
+## Mandatory core lifecycle acceptance
+
+The publisher worker-image gate now consumes its actual service ZIP through a
+separate, immutable core checkout and the core's opt-in Docker lifecycle fixture.
+It checks confirmed install/enable, probe, stop, lost-create recovery and
+independent cleanup with an inert managed UI and ephemeral release trust. A
+dedicated read-only source-access deploy key belongs to CI only; no publisher
+credential or runtime secret is shared. Core source never enters the MCP build
+or import graph. The reviewed core pin, access provisioning and actual passing
+Gitea run are required evidence, not inferred from workflow preparation.
+Worker-v1, service-oci-zip-v1 and release schema 1 are unchanged. Full public
+installer/update/rollback, SSH, distribution and ingress remain pending.
+
 ## Current blockers
 
 The prototype has not passed the component contract gates. Native isolation and
