@@ -204,6 +204,27 @@ Worker-v1, service-oci-zip-v1 and release schema 1 are unchanged. Full public
 installer/update/rollback, remote VPS/OpenSSH, distribution and ingress remain
 pending; loopback AsyncSSH is transport evidence, not remote-server acceptance.
 
+## Prepared private read-channel acceptance
+
+Core `97874c093e6bd1552b9dde6913791e7ce1bc6572` implements an inactive bounded
+worker-v1 dispatcher: one exchange at a time, fixed Docker attach, fresh hello
+and render nonces, exact canonical replies, and current client/resource/runtime
+checks before sending protected data and after worker I/O. The worker receives
+no credentials, commands or URLs. Core focused evidence: 231 passed, six local
+Docker skips and two existing warnings; independent review approved this limited
+slice. Gitea/publication and actual publisher-package channel evidence remain
+pending, not inferred from loopback TCP tests.
+
+The prepared CI pin adds two fresh selected-app dispatches followed by revoke
+and admission denial to each actual publisher-package direct/SSH fixture. Publish
+this pin only after the exact core SHA passes Gitea and reaches GitHub; require
+both non-skipped transport cases before claiming compatibility. Production
+signing/distribution, public installer/enrollment, authenticated ingress, actual
+assistant acceptance and update/rollback remain separate gates. Contracts and
+capability identifiers are unchanged; core owns authority and this component
+owns only bounded worker translation. No new component runtime code or shared
+source/credentials is introduced.
+
 ## Current blockers
 
 The prototype has not passed the component contract gates. Native isolation and

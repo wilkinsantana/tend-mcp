@@ -133,6 +133,21 @@ neither was skipped. Cleanup does not depend on a surviving SSH tunnel. This
 is not remote VPS/OpenSSH, update/rollback, public installer UX or client
 acceptance; the SSH candidate's actual Gitea execution remains a separate gate.
 
+The prepared read-channel pin is core
+`97874c093e6bd1552b9dde6913791e7ce1bc6572`. Do not publish this workflow change
+until that exact core commit passes its required Gitea gates and reaches GitHub.
+The fixture additionally enrolls a narrowly scoped internal client, performs two
+fresh serialized worker-v1 hello/render exchanges for one selected app, then
+revokes the client and proves a new read grant is denied. Both direct Docker
+and pinned loopback SSH must execute without skips against this job's actual
+service ZIP. Each detach must preserve the worker for the subsequent exchange.
+Core owns all credentials, data filtering and before/after authorization checks;
+the worker sees only bounded closed projections and fresh request identifiers.
+This remains internal acceptance, not public MCP/OAuth/browser-client acceptance.
+Runtime release schema 1, service-oci-zip-v1, worker-v1, capability identifiers
+and compatibility ranges are unchanged; no runtime dependency or source import
+is added. Matching candidate CI evidence remains required.
+
 Private source access uses `CORE_COMPAT_READ_KEY`: a dedicated read-only GitHub
 deploy key for the core repository, whose private half exists only in this
 consumer's approved CI secret store. It is not a reused publisher credential or

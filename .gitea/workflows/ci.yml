@@ -53,7 +53,7 @@ jobs:
         with:
           github-server-url: https://github.com
           repository: wilkinsantana/tend.host
-          ref: 21a7924e5f39e08cbaf94826c710d9ef1714221f
+          ref: 97874c093e6bd1552b9dde6913791e7ce1bc6572
           path: .core-contract
           ssh-key: ${{ secrets.CORE_COMPAT_READ_KEY }}
           persist-credentials: false
@@ -61,7 +61,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git -C .core-contract rev-parse HEAD)" = 21a7924e5f39e08cbaf94826c710d9ef1714221f
+          test "$(git -C .core-contract rev-parse HEAD)" = 97874c093e6bd1552b9dde6913791e7ce1bc6572
           test -z "$(git -C .core-contract status --porcelain)"
       - name: Install isolated core fixture dependencies
         shell: bash
