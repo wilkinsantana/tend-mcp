@@ -30,6 +30,14 @@ jobs:
       - run: uv run ruff check scripts/normalize-runtime-image.py scripts/check-worker-image.py
       - run: uv run ruff format --check scripts/normalize-runtime-image.py scripts/check-worker-image.py
       - run: uv run pytest -q
+      - run: uv run ruff check scripts/pack-native-ui.py scripts/record-component-artifacts.py scripts/publish-component-release.py
+      - run: uv run ruff format --check scripts/pack-native-ui.py scripts/record-component-artifacts.py scripts/publish-component-release.py
+      - run: uv run mypy scripts/pack-native-ui.py scripts/record-component-artifacts.py scripts/publish-component-release.py
+      - uses: https://gitea.com/actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run check && npm test
       - name: Build distribution
         run: uv build
 
@@ -91,6 +99,101 @@ jobs:
           assert all(not any(case.find(tag) is not None for tag in ('skipped', 'failure', 'error')) for case in cases), 'lifecycle skips or failures are not acceptance'
           print('Direct and pinned SSH publisher lifecycle cases passed without skips.')
           PYTHON
+
+  # Inactive until parent integration/pins, native runners, trust provisioning
+  # and exact-source approval are complete. Never enable for pull requests.
+  component_build:
+    name: Validate immutable component packages
+    needs: [test]
+    if: gitea.event_name == 'push' && gitea.ref == 'refs/heads/main' && vars.COMPONENT_RELEASE_APPROVED_SHA == gitea.sha
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+    runs-on: tend-ci-${{ matrix.arch }}
+    steps:
+      - uses: https://gitea.com/actions/checkout@v7
+        with:
+          ref: ${{ gitea.sha }}
+          persist-credentials: false
+      - uses: https://gitea.com/actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Require native platform and exact clean source
+        env:
+          VERIFIED_SHA: ${{ gitea.sha }}
+          TARGET_ARCH: ${{ matrix.arch }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$VERIFIED_SHA"
+          test -z "$(git status --porcelain)"
+          test "$(docker version --format '{{.Server.Arch}}')" = "$TARGET_ARCH"
+      - run: python scripts/check-worker-image.py --output dist/worker-image
+      - name: Name validated transport without rebuilding
+        env:
+          TARGET_ARCH: ${{ matrix.arch }}
+        run: |
+          mkdir -p dist/component
+          cp dist/worker-image/service.zip "dist/component/service-linux-$TARGET_ARCH.zip"
+          if [ "$TARGET_ARCH" = amd64 ]; then
+            python scripts/pack-native-ui.py --output dist/component/tend-mcp-ui.zip
+          fi
+      - uses: https://gitea.com/actions/upload-artifact@v3
+        with:
+          name: component-${{ gitea.sha }}-${{ matrix.arch }}
+          path: dist/component/*
+          retention-days: 7
+
+  component_identity:
+    needs: [component_build, worker_image]
+    if: gitea.event_name == 'push' && gitea.ref == 'refs/heads/main' && vars.COMPONENT_RELEASE_APPROVED_SHA == gitea.sha
+    runs-on: tend-ci
+    steps:
+      - uses: https://gitea.com/actions/checkout@v7
+        with:
+          ref: ${{ gitea.sha }}
+          persist-credentials: false
+      - uses: https://gitea.com/actions/download-artifact@v3
+        with:
+          name: component-${{ gitea.sha }}-amd64
+          path: dist/component
+      - uses: https://gitea.com/actions/download-artifact@v3
+        with:
+          name: component-${{ gitea.sha }}-arm64
+          path: dist/component
+      - run: python3 scripts/record-component-artifacts.py
+      - uses: https://gitea.com/actions/upload-artifact@v3
+        with:
+          name: component-validated-${{ gitea.sha }}
+          path: dist/component/*
+          retention-days: 7
+
+  component_publish:
+    name: Sign and publish approved component (not source mirroring)
+    needs: [test, worker_image, component_identity, publish_github]
+    if: gitea.event_name == 'push' && gitea.ref == 'refs/heads/main' && vars.COMPONENT_RELEASE_APPROVED_SHA == gitea.sha
+    runs-on: tend-ci
+    steps:
+      - uses: https://gitea.com/actions/checkout@v7
+        with:
+          ref: ${{ gitea.sha }}
+          persist-credentials: false
+      - uses: https://gitea.com/actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --quiet uv
+      - run: uv sync --frozen --group release
+      - uses: https://gitea.com/actions/download-artifact@v3
+        with:
+          name: component-validated-${{ gitea.sha }}
+          path: dist/component
+      - name: Sign unchanged validated bytes and publish immutable release
+        env:
+          VERIFIED_SHA: ${{ gitea.sha }}
+          COMPONENT_RELEASE_APPROVED_SHA: ${{ vars.COMPONENT_RELEASE_APPROVED_SHA }}
+          GITEA_EVENT_NAME: ${{ gitea.event_name }}
+          GITEA_REF: ${{ gitea.ref }}
+          COMPONENT_RELEASE_SIGNING_KEY: ${{ secrets.COMPONENT_RELEASE_SIGNING_KEY }}
+          GH_TOKEN: ${{ secrets.GH_PUBLISH_TOKEN }}
+        run: uv run --group release python scripts/publish-component-release.py
 
   publish_github:
     name: Publish verified main to GitHub

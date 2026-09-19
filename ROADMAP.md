@@ -225,6 +225,33 @@ capability identifiers are unchanged; core owns authority and this component
 owns only bounded worker translation. No new component runtime code or shared
 source/credentials is introduced.
 
+## Prepared first public read-only companion delivery
+
+Branch implementation adds independently packaged `host.tend.mcp` 0.1.0 native
+schema-2 management UI, fixed same-origin browser management requests, explicit
+app consent, 1–30 day expiry, named revocation, EN/ES and memory-only one-time
+credentials. The deterministic UI ZIP contains only its manifest and module.
+See `docs/native-ui-v1.md`; browser/transport ownership follows core's
+`docs/strategy/tend-mcp-public-read-v1.md`. No worker-v1, runtime schema-1 or
+service-oci-zip-v1 change is made.
+
+A disabled-by-default exact-main-SHA-approved Gitea artifact lane reuses the
+existing native image normalizer/probe, service packager and signer. Its fixed
+`component-v0.1.0` asset names and honest source/artifact identity policy are in
+`docs/component-artifacts-v1.md`. No keys have been generated/provisioned, no
+production signature/upload has occurred, and source mirroring is not release.
+Focused checks: 26 Python tests and five jsdom tests passed; JavaScript syntax,
+Ruff/format and mypy for all five new/existing publisher scripts passed. Actual
+core native integrity/scanner accepted the UI ZIP with zero blocks/warnings.
+Independent read-only Architect review approved an inactive prepared commit after
+fixing the required `network` declaration and dialog focus lifecycle; the review's
+remaining post-sign mutation test suggestion is now covered. This is not full
+production security approval. Parent's final core CI pin/integration handoff,
+native runner availability, both-platform lifecycle acceptance, managed native
+UI/browser acceptance, signing trust and artifact publication remain gates. The
+existing core fixture pin is deliberately unchanged pending parent approval.
+Prepared workflow jobs are not evidence of Gitea execution or installation.
+
 ## Current blockers
 
 The prototype has not passed the component contract gates. Native isolation and
