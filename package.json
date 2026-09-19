@@ -3,6 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "scripts": { "test": "node --test ui/tests/*.test.js", "check": "node --check ui/index.js" },
-  "devDependencies": { "jsdom": "26.1.0" }
+  "scripts": {
+    "test": "node --test ui/tests/*.test.js",
+    "check": "node --check ui/index.js && node --check scripts/native-ui-browser.mjs",
+    "test:browser": "node scripts/native-ui-browser.mjs"
+  },
+  "devDependencies": {
+    "jsdom": "26.1.0",
+    "playwright": "1.58.2"
+  }
 }

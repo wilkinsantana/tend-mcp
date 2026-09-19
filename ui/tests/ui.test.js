@@ -63,6 +63,18 @@ test('fixed same-origin GETs, text-only inventory, explicit selection, CSRF and 
   ctx.component.unmount();
 });
 
+test('assistant name matches the core 64-character boundary even for programmatic submission', async () => {
+  const ctx = await setup(); fill(ctx);
+  const name = document.querySelector('dialog input');
+  assert.equal(name.maxLength, 64);
+  name.value = 'a'.repeat(65); ctx.submit(); await tick();
+  assert.ok(!ctx.calls.some(({ options }) => options.method === 'POST'));
+  name.value = 'a'.repeat(64); ctx.submit(); await tick();
+  const post = ctx.calls.find(({ options }) => options.method === 'POST');
+  assert.equal(JSON.parse(post.options.body).name, 'a'.repeat(64));
+  ctx.component.unmount();
+});
+
 test('named revocation encodes opaque IDs, mismatch never posts', async () => {
   const ctx = await setup();
   [...document.querySelectorAll('button')].find((n) => n.textContent.startsWith('Revoke:')).click();

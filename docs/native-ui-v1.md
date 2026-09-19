@@ -18,7 +18,8 @@ CSRF comes from `csrf_token`, sent as `X-CSRF-Token` for POSTs. Requests refuse
 redirects and use no-store; core still owns all authorization and response bounds.
 No endpoint supplied by an API is used as a fetch target or generated link.
 
-Enrollment requires an explicit app selection, a nonempty name (max 80), integer
+Enrollment requires an explicit app selection, a nonempty name (max 64, matching
+core; also checked before programmatic submissions), integer
 expiry 1–30 days (default seven), consent, and recent administrator sign-in.
 Core decides readiness and actual current grants. Only app summary/deployment
 status reads are described; sibling apps, server-wide health, writes and payments
@@ -38,11 +39,18 @@ Native `<dialog>.showModal()` provides focus trapping and inert background;
 Escape is blocked during writes, never by clicking the backdrop. Explicit cancel
 and dismiss controls remain available afterward. Form labels, live fixed errors,
 keyboard focus outlines and English/Spanish guidance are included. DOM tests mock
-only the native dialog primitive: real browser/host accessibility and managed
-installation remain integration gates, not claimed by jsdom. The actual core
-native integrity verifier and static scanner accepted the prepared ZIP with
-zero blocks and zero warnings in an isolated local subprocess; that is scanner
-evidence, not managed installation or production authorization.
+only the native dialog primitive. `scripts/native-ui-browser.mjs` independently
+packages the ZIP, verifies module integrity, and mounts those bytes in Chromium
+through the native mount/unmount contract. EN/ES at mobile/desktop widths covers
+explicit selection, native modal behavior, credential clearing and explicit copy,
+named revocation, uncertain responses without automatic retries and unavailable
+state. APIs are intercepted: this is not the complete core HostApi/browser shell,
+actual assistant enrollment or live worker evidence.
+
+The exact-core contract fixture additionally runs the actual UI archive through
+normal managed installation, scanner and HTTP SDK tests using daemon doubles.
+Keep that result separate from the real service-package direct Docker/pinned SSH
+fixture, and both separate from production signing and deployment.
 
 ## Deterministic transport
 
@@ -50,8 +58,15 @@ evidence, not managed installation or production authorization.
 python scripts/pack-native-ui.py --source ui --output dist/tend-mcp-ui.zip
 npm ci --ignore-scripts --no-audit --no-fund
 npm run check && npm test
+npx playwright install --with-deps chromium
+npm run test:browser
 uv run pytest -q tests/test_ui_packager.py
 ```
+
+The browser check supports `PLAYWRIGHT_MODULE` and `PYTHON_BIN` overrides for
+already-installed local tools; Gitea uses the locked development dependency and
+its disposable runner. It binds loopback on an ephemeral port, refuses unexpected
+requests and removes generated artifacts on exit. No live endpoint is used.
 
 Create the output parent first. The packager reads only bounded regular UTF-8
 `index.js` (no leaf symlinks), generates `extension.json`, and binds the module

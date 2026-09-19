@@ -38,6 +38,10 @@ jobs:
           node-version: '22'
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm run check && npm test
+      - name: Install disposable browser dependencies
+        run: npx playwright install --with-deps chromium
+      - name: Packaged native UI browser contract (intercepted APIs)
+        run: npm run test:browser
       - name: Build distribution
         run: uv build
 
@@ -61,7 +65,7 @@ jobs:
         with:
           github-server-url: https://github.com
           repository: wilkinsantana/tend.host
-          ref: 97874c093e6bd1552b9dde6913791e7ce1bc6572
+          ref: 05eda937f9328ea49616d9d8bc0531ce21bc23f2
           path: .core-contract
           ssh-key: ${{ secrets.CORE_COMPAT_READ_KEY }}
           persist-credentials: false
@@ -69,7 +73,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git -C .core-contract rev-parse HEAD)" = 97874c093e6bd1552b9dde6913791e7ce1bc6572
+          test "$(git -C .core-contract rev-parse HEAD)" = 05eda937f9328ea49616d9d8bc0531ce21bc23f2
           test -z "$(git -C .core-contract status --porcelain)"
       - name: Install isolated core fixture dependencies
         shell: bash
@@ -98,6 +102,24 @@ jobs:
           assert len(cases) == 2, 'both lifecycle transports must execute'
           assert all(not any(case.find(tag) is not None for tag in ('skipped', 'failure', 'error')) for case in cases), 'lifecycle skips or failures are not acceptance'
           print('Direct and pinned SSH publisher lifecycle cases passed without skips.')
+          PYTHON
+      - name: Actual UI archive and core HTTP contract (daemon doubles)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/pack-native-ui.py --output dist/worker-image/ui.zip
+          export TEND_MCP_TEST_UI_PACKAGE="$PWD/dist/worker-image/ui.zip"
+          python="$PWD/.core-fixture-venv/bin/python"
+          cd .core-contract/backend
+          "$python" -m pytest -q --junitxml="$RUNNER_TEMP/mcp-public-ui.xml" \
+            tests/test_mcp_public_runtime.py tests/test_mcp_public_flow.py
+          "$python" - "$RUNNER_TEMP/mcp-public-ui.xml" <<'PYTHON'
+          import sys
+          import xml.etree.ElementTree as ET
+          cases = list(ET.parse(sys.argv[1]).getroot().iter('testcase'))
+          assert len(cases) == 35, 'all pinned public runtime/HTTP cases must execute'
+          assert all(not any(case.find(tag) is not None for tag in ('skipped', 'failure', 'error')) for case in cases), 'public UI skips or failures are not acceptance'
+          print('Actual native archive/core HTTP cases passed; daemon I/O doubled in this selection.')
           PYTHON
 
   # Inactive until parent integration/pins, native runners, trust provisioning

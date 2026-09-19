@@ -17,6 +17,32 @@ Panel-owned contracts (locate the tend.host checkout from the active workspace):
   unresolved isolation, artifact, enrollment, and grant details block freezing.
 - `Roadmap/AGENT-ACCESS-ROADMAP.md`: shared implementation gates.
 
+## Current read-only delivery checkpoint
+
+Core `05eda937f9328ea49616d9d8bc0531ce21bc23f2` adds the host setup/recovery
+surface, separate disabled install/enable, authenticated stateless ingress and
+browser-managed exact-app client grants. It passed Gitea PR #17 / run #200 and
+independent source review. The protected-main gate and same-SHA automatic GitHub
+publication must also pass before advancing this repository's immutable core pin.
+The coordinator verifies that gate before pushing the companion candidate; older
+core references below describe historical slices, not missing current source.
+
+The companion aligns enrollment names with core's 64-character bound, including
+programmatic submission. The independently packaged UI passes real Chromium
+EN/ES desktop/mobile checks with intercepted APIs. Local focused checks: six DOM
+tests, eight packager tests and 35 actual-archive/core runtime/HTTP cases pass;
+those 35 use daemon doubles. Independent review approves this source slice only.
+The mandatory Gitea worker job also consumes the updated core's real standard
+SDK → HTTP → private-worker → denied sibling → revoke checks over direct Docker
+and pinned loopback SSH. All cases must execute without skips before this
+candidate claims actual-worker compatibility; preparing the workflow is not proof.
+
+Production artifact approval remains unset. Signing trust, anonymously reachable
+signed distribution, supported-platform evidence, complete host/browser acceptance
+and live install/enroll/read/deny/revoke are separate gates. Source mirroring alone
+never enables the component. Updates/rollback and write tools remain outside this
+first read-only release.
+
 ## Gates
 
 - [x] C0: Record independent component direction in both repositories.
@@ -254,9 +280,12 @@ Prepared workflow jobs are not evidence of Gitea execution or installation.
 
 ## Current blockers
 
-The prototype has not passed the component contract gates. Native isolation and
-remote client authorization are unresolved. Tool payloads, redaction, transport
-security, durable operation behavior and destructive approvals need review.
+The standalone prototype is not the production service. Core now owns implemented
+isolation, read authorization and redacted transport; this candidate still needs
+its exact-pinned real-worker CI evidence. Production publisher/key provisioning,
+public artifact reachability, native platform validation and final integrated
+release review remain blockers. Destructive approvals and prototype write tools
+are not implicitly authorized by the read-only implementation.
 Gitea worker-image validation and automatic source mirroring passed on #23 for
 `f708d99e59a9300c2a777fe44ea7be0afc394407`; this is not a signed component release.
 New candidates still require their own exact-SHA Gitea checks. Earlier

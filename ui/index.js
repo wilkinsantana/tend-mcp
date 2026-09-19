@@ -140,7 +140,7 @@ export default function activate() {
     element('p', t('guidance'), box);
     const form = element('form', null, box);
     const name = field(form, t('name'));
-    name.required = true; name.maxLength = 80;
+    name.required = true; name.maxLength = 64;
     const selection = element('fieldset', null, form);
     element('legend', t('apps'), selection);
     const choices = apps.map((app) => ({ id: app.id, node: field(selection, app.name, 'checkbox') }));
@@ -154,10 +154,11 @@ export default function activate() {
     form.addEventListener('submit', (event) => {
       event.preventDefault();
       const app_ids = choices.filter(({ node }) => node.checked).map(({ id }) => id);
-      if (!name.value.trim() || !app_ids.length || !consent.checked) return;
+      const clientName = name.value.trim();
+      if (!clientName || clientName.length > 64 || !app_ids.length || !consent.checked) return;
       void submit(async (current) => {
         const result = await request('/api/mcp/clients', {
-          name: name.value.trim(), app_ids, expires_in_days: Number(days.value), accepted: true,
+          name: clientName, app_ids, expires_in_days: Number(days.value), accepted: true,
         });
         if (current !== generation) { result.token = ''; return; }
         if (typeof result.token !== 'string' || !result.token.startsWith('tend_mcp_')) throw new Error('request');
